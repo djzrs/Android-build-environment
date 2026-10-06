@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Minimal Gradle wrapper script
+# Downloads Gradle if needed and runs it
+
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+GRADLE_VERSION="8.5"
+GRADLE_USER_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
+WRAPPER_DIR="$APP_DIR/gradle/wrapper"
+DIST_DIR="$GRADLE_USER_HOME/wrapper/dists/gradle-$GRADLE_VERSION-bin"
+
+find_gradle() {
+    if command -v gradle &> /dev/null; then
+        echo "gradle"
+        return 0
+    fi
+    for dist in "$DIST_DIR"/*/; do
+        if [ -f "${dist}bin/gradle" ]; then
+            echo "${dist}bin/gradle"
+            return 0
+        fi
+    done
+    return 1
+}
+
+download_gradle() {
+    echo "Downloading Gradle $GRADLE_VERSION..."
+    mkdir -p "$DIST_DIR"
+    local tmp_zip="/tmp/gradle-$GRADLE_VERSION-bin.zip"
+    
+    if command -v curl &> /dev/null; then
+        curl -L --noproxy '*' -o "$tmp_zip" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" 2>/dev/null || \
+        curl -L -o "$tmp_zip" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" 2>/dev/null
+    elif command -v wget &> /dev/null; then
+        wget -q -O "$tmp_zip" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" 2>/dev/null || \
+        wget -O "$tmp_zip" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" 2>/dev/null
+    else
+        echo "Error: Neither curl nor wget available"
+        exit 1
+    fi
+    
+    cd "$DIST_DIR"
+    unzip -q "$tmp_zip" 2>/dev/null || tar xzf "$tmp_zip" 2>/dev/null
+    rm -f "$tmp_zip"
+    
+    for dist in "gradle-$GRADLE_VERSION" "gradle-$GRADLE_VERSION-bin"; do
+        if [ -f "$dist/bin/gradle" ]; then
+            echo "$dist/bin/gradle"
+            return 0
+        fi
+    done
+    echo "Error: Failed to extract Gradle"
+    exit 1
+}
+
+GRADLE_CMD=$(find_gradle) || GRADLE_CMD=$(download_gradle)
+
+if [ ! -x "$GRADLE_CMD" ]; then
+    echo "Error: Gradle not found or not executable"
+    exit 1
+fi
+
+exec "$GRADLE_CMD" "$@"
