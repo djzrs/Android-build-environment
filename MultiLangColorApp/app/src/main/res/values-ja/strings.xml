@@ -3,6 +3,6 @@
     <string name="app_name">マルチランゲルカラーアプリ</string>
     <string name="welcome_message">マルチランゲルカラーアプリへようこそ！\n\n画面をタップして背景色を変更\n長押しで色の詳細を表示</string>
     <string name="current_color">現在の色: %s</string>
-    <string name="color_detail">色: %s\nR: %d  G: %d  B: %d</string>
+    <string name="color_detail" formatted="false">色: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">タップで色変更 • 長押しで詳細</string>
 </resources>

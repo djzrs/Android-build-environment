@@ -3,6 +3,6 @@
     <string name="app_name">MultiLang Color App</string>
     <string name="welcome_message">Welcome to MultiLang Color App!\n\nTap screen to change background color\nLong press to view color details</string>
     <string name="current_color">Current Color: %s</string>
-    <string name="color_detail">Color: %s\nR: %d  G: %d  B: %d</string>
+    <string name="color_detail" formatted="false">Color: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">Tap anywhere to change color • Long press for details</string>
 </resources>

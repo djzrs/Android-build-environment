@@ -3,6 +3,6 @@
     <string name="app_name">多语言彩蛋应用</string>
     <string name="welcome_message">欢迎来到多语言彩蛋应用！\n\n点击屏幕切换背景颜色\n长按查看颜色详情</string>
     <string name="current_color">当前颜色: %s</string>
-    <string name="color_detail">颜色: %s\nR: %d  G: %d  B: %d</string>
+    <string name="color_detail" formatted="false">颜色: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">点击任意位置切换颜色 • 长按查看详情</string>
 </resources>

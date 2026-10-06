@@ -3,6 +3,6 @@
     <string name="app_name">멀티랭글 컬러 앱</string>
     <string name="welcome_message">멀티랭글 컬러 앱에 오신 것을 환영합니다!\n\n화면 탭으로 배경색 변경\n길게 누르면 색상 정보 표시</string>
     <string name="current_color">현재 색상: %s</string>
-    <string name="color_detail">색상: %s\nR: %d  G: %d  B: %d</string>
+    <string name="color_detail" formatted="false">색상: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">탭으로 색상 변경 • 길게 눌러 정보</string>
 </resources>
