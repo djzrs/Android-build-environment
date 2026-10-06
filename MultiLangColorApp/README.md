@@ -40,7 +40,7 @@ MultiLangColorApp/
 - Android SDK 24+ (minSdk 24, targetSdk 34)
 - Android Studio Hedgehog or later
 - Kotlin 1.9.24
-- Gradle 8.5+
+- Gradle 8.7+ (AGP 8.5.0 requires Gradle >= 8.7)
 
 ## Building
 
@@ -63,3 +63,4 @@ The repository includes automated build and release pipeline:
 # Build check Tue Oct  6 04:18:05 UTC 2026
 # Build check Tue Oct  6 04:18:29 UTC 2026
 CI/CD build trigger - Tue Oct  6 13:45:57 UTC 2026
+CI/CD build trigger - Release APK pipeline fix Tue Oct  6 14:55:00 UTC 2026
