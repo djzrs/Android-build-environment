@@ -11,11 +11,9 @@ WRAPPER_DIR="$APP_DIR/gradle/wrapper"
 DIST_DIR="$GRADLE_USER_HOME/wrapper/dists/gradle-$GRADLE_VERSION-bin"
 
 find_gradle() {
-    if command -v gradle &> /dev/null; then
-        echo "gradle"
-        return 0
-    fi
-    for dist in "$DIST_DIR"/*/; do
+    # Do NOT use a system-installed gradle; only use the pinned version
+    # to avoid running AGP 8.5 under an incompatible Gradle release.
+    for dist in "$DIST_DIR"/*/ "$DIST_DIR"/*/*/; do
         if [ -f "${dist}bin/gradle" ]; then
             echo "${dist}bin/gradle"
             return 0
