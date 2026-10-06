@@ -29,16 +29,16 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Grant execute permission for gradlew
+    - name: Make gradlew executable
       run: chmod +x MultiLangColorApp/gradlew
 
     - name: Build Debug APK
       run: ./gradlew assembleDebug --no-daemon
-      working-directory: ./MultiLangColorApp
+      working-directory: MultiLangColorApp
 
     - name: Build Release APK
       run: ./gradlew assembleRelease --no-daemon
-      working-directory: ./MultiLangColorApp
+      working-directory: MultiLangColorApp
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
