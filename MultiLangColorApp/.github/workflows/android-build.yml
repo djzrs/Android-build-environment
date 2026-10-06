@@ -3,8 +3,12 @@ name: Android Build & Release
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'MultiLangColorApp/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'MultiLangColorApp/**'
   workflow_dispatch:
 
 jobs:
@@ -26,19 +30,21 @@ jobs:
       uses: android-actions/setup-android@v3
 
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
+      run: chmod +x MultiLangColorApp/gradlew
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon || ./gradlew assembleDebug -p app --no-daemon
+      run: ./gradlew assembleDebug --no-daemon
+      working-directory: ./MultiLangColorApp
 
     - name: Build Release APK
-      run: ./gradlew assembleRelease --no-daemon || ./gradlew assembleRelease -p app --no-daemon
+      run: ./gradlew assembleRelease --no-daemon
+      working-directory: ./MultiLangColorApp
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
-        path: app/build/outputs/apk/debug/*.apk
+        path: MultiLangColorApp/app/build/outputs/apk/debug/*.apk
         retention-days: 7
 
     - name: Upload Release APK
@@ -46,7 +52,7 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       with:
         name: release-apk
-        path: app/build/outputs/apk/release/*.apk
+        path: MultiLangColorApp/app/build/outputs/apk/release/*.apk
         retention-days: 30
 
     - name: Create Release
@@ -55,7 +61,7 @@ jobs:
       with:
         tag_name: v${{ github.run_number }}
         name: Build ${{ github.run_number }}
-        files: app/build/outputs/apk/release/*.apk
+        files: MultiLangColorApp/app/build/outputs/apk/release/*.apk
         draft: false
         prerelease: false
       env:
