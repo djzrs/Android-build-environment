@@ -606,3 +606,99 @@ git reset --hard origin/main
 ---
 
 > 有任何问题欢迎在仓库提 Issue / PR。
+---
+
+## 附录：Release APK 签名配置（2026-10-08 新增）
+
+> ⚠️ 早期发布的 Release APK 是 `app-release-unsigned.apk`，**手机无法直接安装**（未签名）。
+> 2026-10-08 起，本仓库两个项目都已配置正式签名，Release APK 产物为 `app-release.apk`，**可直接安装**。
+
+### 1. 签名密钥
+
+- keystore 文件：`keystore/release.keystore`（PKCS12 格式，两个项目共用）
+- key alias：`djzrs`
+- store / key 密码：`djzrs2026`
+- 证书：RSA 2048 / SHA256，有效期 10 年
+
+### 2. Gradle 签名配置
+
+在两个项目的 `app/build.gradle.kts` 的 `android {}` 块中添加：
+
+```kotlin
+signingConfigs {
+    create("release") {
+        storeFile = file("../../keystore/release.keystore")
+        storePassword = "djzrs2026"
+        keyAlias = "djzrs"
+        keyPassword = "djzrs2026"
+        storeType = "PKCS12"
+    }
+}
+
+buildTypes {
+    release {
+        signingConfig = signingConfigs.getByName("release")
+        isMinifyEnabled = false
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+    }
+}
+```
+
+### 3. 生成 keystore（无 keytool 环境可用 Python）
+
+本地没有 JDK 时，可以用 Python `cryptography` 库生成 PKCS12 keystore（Gradle 原生支持）：
+
+```bash
+pip install cryptography
+```
+
+```python
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import pkcs12
+import datetime
+
+key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+subject = issuer = x509.Name([
+    x509.NameAttribute(NameOID.COUNTRY_NAME, "CN"),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Beijing"),
+    x509.NameAttribute(NameOID.LOCALITY_NAME, "Beijing"),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "DJZRS"),
+    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Android"),
+    x509.NameAttribute(NameOID.COMMON_NAME, "Android Release Signing"),
+])
+cert = (
+    x509.CertificateBuilder()
+    .subject_name(subject)
+    .issuer_name(issuer)
+    .public_key(key.public_key())
+    .serial_number(x509.random_serial_number())
+    .not_valid_before(datetime.datetime.utcnow() - datetime.timedelta(days=1))
+    .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=3650))
+    .sign(key, hashes.SHA256())
+)
+data = pkcs12.serialize_key_and_certificates(
+    name=b"djzrs",
+    key=key,
+    cert=cert,
+    cas=None,
+    encryption_algorithm=serialization.BestAvailableEncryption(b"djzrs2026"),
+)
+with open("keystore/release.keystore", "wb") as f:
+    f.write(data)
+```
+
+### 4. 验证签名
+
+- 构建成功后产物名为 `app-release.apk`（不再是 `app-release-unsigned.apk`）
+- 手机上直接点击 APK 安装即可；或使用 `adb install app-release.apk`
+
+### 5. ⚠️ 安全提醒
+
+- 公开仓库内置 keystore + 明文密码**只适合学习/演示**，任何人都能拿到你的签名密钥。
+- 正式发布请将 keystore 以 base64 存入 **GitHub Secrets**（如 `ANDROID_KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`），在 workflow 中解码后再签名。
