@@ -7,6 +7,16 @@ android {
     namespace = "com.example.multilangcolorapp"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../../keystore/release.keystore")
+            storePassword = "djzrs2026"
+            keyAlias = "djzrs"
+            keyPassword = "djzrs2026"
+            storeType = "PKCS12"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.multilangcolorapp"
         minSdk = 24
@@ -19,6 +29,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
