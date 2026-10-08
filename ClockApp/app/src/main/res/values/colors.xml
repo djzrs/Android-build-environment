@@ -1,0 +1,5 @@
+<resources>
+    <color name="clock_bg">#000000</color>
+    <color name="clock_fg">#FFFFFF</color>
+    <color name="settings_bg">#1C1B1F</color>
+</resources>
