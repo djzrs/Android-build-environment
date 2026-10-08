@@ -1,0 +1,16 @@
+<resources>
+    <string-array name="clock_style_names">
+        <item>@string/style_flip</item>
+        <item>@string/style_digital</item>
+        <item>@string/style_analog</item>
+        <item>@string/style_neon</item>
+        <item>@string/style_led</item>
+        <item>@string/style_word</item>
+        <item>@string/style_lcd</item>
+        <item>@string/style_pixel</item>
+        <item>@string/style_hud</item>
+        <item>@string/style_binary</item>
+        <item>@string/style_ring</item>
+        <item>@string/style_gradient</item>
+    </string-array>
+</resources>
