@@ -5,4 +5,7 @@
     <string name="current_color">Current Color: %s</string>
     <string name="color_detail" formatted="false">Color: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">Tap anywhere to change color • Long press for details</string>
+    <string name="copy_success">Color copied to clipboard!</string>
+    <string name="auto_change">Auto Change</string>
+    <string name="history_label">History</string>
 </resources>

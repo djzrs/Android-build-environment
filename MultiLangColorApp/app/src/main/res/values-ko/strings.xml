@@ -5,4 +5,7 @@
     <string name="current_color">현재 색상: %s</string>
     <string name="color_detail" formatted="false">색상: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">탭으로 색상 변경 • 길게 눌러 정보</string>
+    <string name="copy_success">색상이 클립보드에 복사되었습니다!</string>
+    <string name="auto_change">자동 변경</string>
+    <string name="history_label">기록</string>
 </resources>

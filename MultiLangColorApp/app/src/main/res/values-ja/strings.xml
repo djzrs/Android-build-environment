@@ -5,4 +5,7 @@
     <string name="current_color">現在の色: %s</string>
     <string name="color_detail" formatted="false">色: %s\nR: %d  G: %d  B: %d</string>
     <string name="hint_text">タップで色変更 • 長押しで詳細</string>
+    <string name="copy_success">色をクリップボードにコピーしました！</string>
+    <string name="auto_change">自動変更</string>
+    <string name="history_label">履歴</string>
 </resources>
