@@ -12,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.djzrs.lefiright.AudioProcessor.Segment
 import java.io.File
 import java.io.IOException
 
@@ -289,7 +290,7 @@ class MainActivity : AppCompatActivity() {
         val pan = segments[selectedSegmentIndex].pan
         val lPct = ((1.0f - pan).coerceIn(0f, 1f) * 100).toInt()
         val rPct = ((1.0f + pan).coerceIn(0f, 1f) * 100).toInt()
-        panText.text = String.format(getString(R.string.segment_label), selectedSegmentIndex + 1) +
+        panText.text = getString(R.string.segment_label, selectedSegmentIndex + 1) +
                 "  L $lPct% · R $rPct%"
     }
 

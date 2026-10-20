@@ -9,6 +9,7 @@ import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import com.djzrs.lefiright.AudioProcessor.Segment
 import kotlin.math.abs
 
 class WaveformView @JvmOverloads constructor(
