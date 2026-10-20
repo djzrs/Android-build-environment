@@ -20,4 +20,5 @@
     <string name="segments_cleared">已清除分段</string>
     <string name="segment_label">第 %d 段</string>
     <string name="delete_segment">删除该段</string>
+    <string name="load_failed">无法读取该音频文件，请换一个试试</string>
 </resources>
