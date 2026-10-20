@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">左右音</string>
+    <string name="import_audio">导入音频</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="volume_label">音量调整</string>
+    <string name="pan_label">立体声推子</string>
+    <string name="pan_center">立体声</string>
+    <string name="export_audio">导出音频</string>
+    <string name="exporting">正在处理音频…</string>
+    <string name="export_done">导出成功</string>
+    <string name="export_failed">导出失败</string>
+    <string name="select_audio">选择音频文件</string>
+    <string name="no_audio">请先导入音频文件</string>
+    <string name="left_channel">左声道</string>
+    <string name="right_channel">右声道</string>
+    <string name="tap_hint">左右音 · 音频剪辑 · 音量调整 · 立体声推子</string>
+</resources>
