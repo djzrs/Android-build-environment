@@ -41,15 +41,18 @@ object AudioProcessor {
         val pan: Float
     )
 
-    /** 解码音频，返回基本信息与波形（用于界面显示） */
+    private const val WAVE_POINTS = 1200
+
+    /**
+     * 解码音频，返回基本信息与波形（流式采样，内存安全）。
+     * 任何异常都会返回空数据而不是崩溃。
+     */
     fun loadAudioInfo(context: Context, uri: Uri): AudioInfo {
-        val decoded = decodePcm(context, uri, 0L, Long.MAX_VALUE)
-        return AudioInfo(
-            sampleRate = decoded.sampleRate,
-            channelCount = decoded.channelCount,
-            durationMs = decoded.durationMs,
-            waveform = generateWaveform(decoded.bytes, decoded.channelCount)
-        )
+        return try {
+            decodeWaveform(context, uri)
+        } catch (e: Exception) {
+            AudioInfo(44100, 1, 0L, FloatArray(WAVE_POINTS))
+        }
     }
 
     /**
@@ -70,87 +73,208 @@ object AudioProcessor {
             var sampleRate = 44100
             for (seg in segments) {
                 val decoded = decodePcm(context, uri, seg.startMs, seg.endMs)
+                if (decoded.bytes.isEmpty()) continue
                 sampleRate = decoded.sampleRate
                 val processed = processPcm(decoded.bytes, decoded.channelCount, gain, seg.pan)
                 outStream.write(processed)
             }
-            encodeAac(outStream.toByteArray(), sampleRate, outputFile)
+            if (outStream.size() == 0) {
+                false
+            } else {
+                encodeAac(outStream.toByteArray(), sampleRate, outputFile)
+            }
         } catch (e: Exception) {
             false
         }
     }
 
-    // ---------- 解码 ----------
+    // ---------- 流式波形解码（显示用，不把整段音频载入内存） ----------
 
-    private fun decodePcm(context: Context, uri: Uri, startMs: Long, endMs: Long): DecodedPcm {
-        val extractor = MediaExtractor()
-        extractor.setDataSource(context, uri, null)
-        val trackIndex = selectAudioTrack(extractor)
-        val format = extractor.getTrackFormat(trackIndex)
-        val sampleRate = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE))
-            format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 44100
-        val channelCount = if (format.containsKey(MediaFormat.KEY_CHANNEL_COUNT))
-            format.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 1
-        val totalDurationUs = if (format.containsKey(MediaFormat.KEY_DURATION))
-            format.getLong(MediaFormat.KEY_DURATION) else 0L
-        extractor.selectTrack(trackIndex)
+    private fun decodeWaveform(context: Context, uri: Uri): AudioInfo {
+        var sampleRate = 44100
+        var channelCount = 1
+        var totalDurationMs = 0L
+        val peaks = mutableListOf<Pair<Long, Float>>() // (timeMs, peakAmp)
 
-        val startUs = startMs * 1000L
-        val endUs = if (endMs >= Long.MAX_VALUE / 1000) Long.MAX_VALUE else endMs * 1000L
-        extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+        var extractor: MediaExtractor? = null
+        var codec: MediaCodec? = null
+        try {
+            extractor = MediaExtractor()
+            extractor.setDataSource(context, uri, null)
+            val trackIndex = selectAudioTrack(extractor)
+            val format = extractor.getTrackFormat(trackIndex)
+            sampleRate = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE))
+                format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 44100
+            channelCount = if (format.containsKey(MediaFormat.KEY_CHANNEL_COUNT))
+                format.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 1
+            totalDurationMs = if (format.containsKey(MediaFormat.KEY_DURATION))
+                format.getLong(MediaFormat.KEY_DURATION) / 1000 else 0L
+            extractor.selectTrack(trackIndex)
 
-        val mime = format.getString(MediaFormat.KEY_MIME) ?: "audio/mp4a-latm"
-        val codec = MediaCodec.createDecoderByType(mime)
-        codec.configure(format, null, null, 0)
-        codec.start()
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: "audio/mp4a-latm"
+            codec = MediaCodec.createDecoderByType(mime)
+            codec.configure(format, null, null, 0)
+            codec.start()
 
-        val bufferInfo = MediaCodec.BufferInfo()
-        val outStream = ByteArrayOutputStream()
-        var inputDone = false
-        var outputDone = false
+            val bufferInfo = MediaCodec.BufferInfo()
+            var inputDone = false
+            var outputDone = false
 
-        while (!outputDone) {
-            if (!inputDone) {
-                val inIndex = codec.dequeueInputBuffer(10_000)
-                if (inIndex >= 0) {
-                    val inBuf = codec.getInputBuffer(inIndex) ?: continue
-                    val sampleSize = extractor.readSampleData(inBuf, 0)
-                    val sampleTime = extractor.sampleTime
-                    if (sampleSize < 0 || sampleTime > endUs) {
-                        codec.queueInputBuffer(
-                            inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM
+            while (!outputDone) {
+                if (!inputDone) {
+                    val inIndex = codec.dequeueInputBuffer(10_000)
+                    if (inIndex >= 0) {
+                        val inBuf = codec.getInputBuffer(inIndex) ?: continue
+                        val sampleSize = extractor.readSampleData(inBuf, 0)
+                        if (sampleSize < 0) {
+                            codec.queueInputBuffer(
+                                inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                            )
+                            inputDone = true
+                        } else {
+                            codec.queueInputBuffer(inIndex, 0, sampleSize, extractor.sampleTime, 0)
+                            extractor.advance()
+                        }
+                    }
+                }
+
+                val outIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000)
+                if (outIndex >= 0) {
+                    val outBuf = codec.getOutputBuffer(outIndex) ?: continue
+                    if (bufferInfo.size > 0) {
+                        val bytes = ByteArray(bufferInfo.size)
+                        outBuf.get(bytes)
+                        peaks.add(
+                            (bufferInfo.presentationTimeUs / 1000) to computePeak(bytes, channelCount)
                         )
-                        inputDone = true
-                    } else {
-                        codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTime, 0)
-                        extractor.advance()
+                    }
+                    codec.releaseOutputBuffer(outIndex, false)
+                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                        outputDone = true
                     }
                 }
             }
+        } catch (e: Exception) {
+            // 解码失败：使用已采集的采样（可能为空），不崩溃
+        } finally {
+            try { codec?.stop() } catch (_: Exception) {}
+            try { codec?.release() } catch (_: Exception) {}
+            try { extractor?.release() } catch (_: Exception) {}
+        }
 
-            val outIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000)
-            if (outIndex >= 0) {
-                val outBuf = codec.getOutputBuffer(outIndex) ?: continue
-                if (bufferInfo.size > 0) {
-                    val bytes = ByteArray(bufferInfo.size)
-                    outBuf.get(bytes)
-                    outStream.write(bytes)
-                }
-                codec.releaseOutputBuffer(outIndex, false)
-                if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
-                    outputDone = true
+        val waveform = FloatArray(WAVE_POINTS)
+        if (peaks.isNotEmpty()) {
+            val maxTime = peaks.maxOfOrNull { it.first } ?: 0L
+            val duration = if (totalDurationMs > 0) totalDurationMs else maxTime
+            for ((t, p) in peaks) {
+                val bucket = if (duration > 0)
+                    ((t * WAVE_POINTS) / duration).toInt().coerceIn(0, WAVE_POINTS - 1)
+                else
+                    0
+                if (p > waveform[bucket]) waveform[bucket] = p
+            }
+        }
+        return AudioInfo(sampleRate, channelCount, totalDurationMs, waveform)
+    }
+
+    private fun computePeak(bytes: ByteArray, channelCount: Int): Float {
+        var maxAmp = 0f
+        val frameCount = bytes.size / 2 / channelCount
+        for (i in 0 until frameCount) {
+            for (ch in 0 until channelCount) {
+                val idx = (i * channelCount + ch) * 2
+                if (idx + 1 < bytes.size) {
+                    val sample = ((bytes[idx].toInt() and 0xFF) or (bytes[idx + 1].toInt() shl 8))
+                        .toShort().toInt()
+                    val amp = kotlin.math.abs(sample) / 32768f
+                    if (amp > maxAmp) maxAmp = amp
                 }
             }
         }
+        return maxAmp
+    }
 
-        codec.stop()
-        codec.release()
-        extractor.release()
+    // ---------- 区间 PCM 解码（用于导出） ----------
+
+    private fun decodePcm(context: Context, uri: Uri, startMs: Long, endMs: Long): DecodedPcm {
+        var extractor: MediaExtractor? = null
+        var codec: MediaCodec? = null
+        val outStream = ByteArrayOutputStream()
+        var sampleRate = 44100
+        var channelCount = 1
+        var totalDurationMs = 0L
+
+        try {
+            extractor = MediaExtractor()
+            extractor.setDataSource(context, uri, null)
+            val trackIndex = selectAudioTrack(extractor)
+            val format = extractor.getTrackFormat(trackIndex)
+            sampleRate = if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE))
+                format.getInteger(MediaFormat.KEY_SAMPLE_RATE) else 44100
+            channelCount = if (format.containsKey(MediaFormat.KEY_CHANNEL_COUNT))
+                format.getInteger(MediaFormat.KEY_CHANNEL_COUNT) else 1
+            totalDurationMs = if (format.containsKey(MediaFormat.KEY_DURATION))
+                format.getLong(MediaFormat.KEY_DURATION) / 1000 else 0L
+            extractor.selectTrack(trackIndex)
+
+            val startUs = startMs * 1000L
+            val endUs = if (endMs >= Long.MAX_VALUE / 1000) Long.MAX_VALUE else endMs * 1000L
+            extractor.seekTo(startUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: "audio/mp4a-latm"
+            codec = MediaCodec.createDecoderByType(mime)
+            codec.configure(format, null, null, 0)
+            codec.start()
+
+            val bufferInfo = MediaCodec.BufferInfo()
+            var inputDone = false
+            var outputDone = false
+
+            while (!outputDone) {
+                if (!inputDone) {
+                    val inIndex = codec.dequeueInputBuffer(10_000)
+                    if (inIndex >= 0) {
+                        val inBuf = codec.getInputBuffer(inIndex) ?: continue
+                        val sampleSize = extractor.readSampleData(inBuf, 0)
+                        val sampleTime = extractor.sampleTime
+                        if (sampleSize < 0 || sampleTime > endUs) {
+                            codec.queueInputBuffer(
+                                inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                            )
+                            inputDone = true
+                        } else {
+                            codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTime, 0)
+                            extractor.advance()
+                        }
+                    }
+                }
+
+                val outIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000)
+                if (outIndex >= 0) {
+                    val outBuf = codec.getOutputBuffer(outIndex) ?: continue
+                    if (bufferInfo.size > 0) {
+                        val bytes = ByteArray(bufferInfo.size)
+                        outBuf.get(bytes)
+                        outStream.write(bytes)
+                    }
+                    codec.releaseOutputBuffer(outIndex, false)
+                    if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                        outputDone = true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // 解码失败：返回已有数据
+        } finally {
+            try { codec?.stop() } catch (_: Exception) {}
+            try { codec?.release() } catch (_: Exception) {}
+            try { extractor?.release() } catch (_: Exception) {}
+        }
 
         return DecodedPcm(
             sampleRate = sampleRate,
             channelCount = channelCount,
-            durationMs = totalDurationUs / 1000,
+            durationMs = totalDurationMs,
             bytes = outStream.toByteArray()
         )
     }
@@ -161,34 +285,6 @@ object AudioProcessor {
             if (mime.startsWith("audio/")) return i
         }
         return 0
-    }
-
-    // ---------- 波形 ----------
-
-    private fun generateWaveform(pcm: ByteArray, channelCount: Int): FloatArray {
-        val targetPoints = 1200
-        val frameCount = pcm.size / 2 / channelCount
-        if (frameCount <= 0) return FloatArray(targetPoints)
-        val step = (frameCount / targetPoints).coerceAtLeast(1)
-        val waveform = FloatArray(targetPoints)
-        var point = 0
-        var frame = 0
-        while (frame < frameCount && point < targetPoints) {
-            var maxAmp = 0f
-            for (ch in 0 until channelCount) {
-                val idx = (frame * channelCount + ch) * 2
-                if (idx + 1 < pcm.size) {
-                    val sample = ((pcm[idx].toInt() and 0xFF) or (pcm[idx + 1].toInt() shl 8))
-                        .toShort().toInt()
-                    val amp = kotlin.math.abs(sample) / 32768f
-                    if (amp > maxAmp) maxAmp = amp
-                }
-            }
-            waveform[point] = maxAmp
-            point++
-            frame += step
-        }
-        return waveform
     }
 
     // ---------- 处理（增益 + 声道推子） ----------
