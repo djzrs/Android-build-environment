@@ -15,4 +15,8 @@
     <string name="left_channel">左声道</string>
     <string name="right_channel">右声道</string>
     <string name="tap_hint">左右音 · 音频剪辑 · 音量调整 · 立体声推子</string>
+    <string name="segment_hint">长按波形添加分割点 · 点击选中段落</string>
+    <string name="clear_segments">清除分段</string>
+    <string name="segments_cleared">已清除分段</string>
+    <string name="segment_label">第 %d 段</string>
 </resources>

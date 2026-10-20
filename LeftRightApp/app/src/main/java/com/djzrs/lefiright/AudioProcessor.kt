@@ -34,6 +34,13 @@ object AudioProcessor {
         val bytes: ByteArray
     )
 
+    /** 音频段落：剪辑选区内的一个片段及其声道设置 */
+    data class Segment(
+        val startMs: Long,
+        val endMs: Long,
+        val pan: Float
+    )
+
     /** 解码音频，返回基本信息与波形（用于界面显示） */
     fun loadAudioInfo(context: Context, uri: Uri): AudioInfo {
         val decoded = decodePcm(context, uri, 0L, Long.MAX_VALUE)
@@ -46,26 +53,28 @@ object AudioProcessor {
     }
 
     /**
-     * 处理并导出音频。
-     * @param startMs 裁剪开始（毫秒）
-     * @param endMs   裁剪结束（毫秒）
-     * @param gain   音量增益（1.0 = 100%）
-     * @param pan    声道推子（-1 全左，0 立体声，+1 全右）
+     * 处理并导出音频（分段）。
+     * @param segments 分段列表，每段独立应用各自的 pan
+     * @param gain     音量增益（1.0 = 100%）
      * @param outputFile 输出文件（.m4a）
      */
     fun processAndExport(
         context: Context,
         uri: Uri,
-        startMs: Long,
-        endMs: Long,
+        segments: List<Segment>,
         gain: Float,
-        pan: Float,
         outputFile: File
     ): Boolean {
         return try {
-            val decoded = decodePcm(context, uri, startMs, endMs)
-            val processed = processPcm(decoded.bytes, decoded.channelCount, gain, pan)
-            encodeAac(processed, decoded.sampleRate, outputFile)
+            val outStream = ByteArrayOutputStream()
+            var sampleRate = 44100
+            for (seg in segments) {
+                val decoded = decodePcm(context, uri, seg.startMs, seg.endMs)
+                sampleRate = decoded.sampleRate
+                val processed = processPcm(decoded.bytes, decoded.channelCount, gain, seg.pan)
+                outStream.write(processed)
+            }
+            encodeAac(outStream.toByteArray(), sampleRate, outputFile)
         } catch (e: Exception) {
             false
         }
