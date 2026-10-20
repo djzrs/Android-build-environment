@@ -170,15 +170,30 @@ class MainActivity : AppCompatActivity() {
         }
 
         Thread {
-            val info = AudioProcessor.loadAudioInfo(this, uri)
-            runOnUiThread {
-                dialog.dismiss()
-                durationMs = info.durationMs
-                waveformView.setData(info.waveform, info.durationMs)
-                rebuildSegmentsFromSelection()
-                updateTimeText(0L)
-                playButton.isEnabled = true
-                exportButton.isEnabled = true
+            try {
+                val info = AudioProcessor.loadAudioInfo(this, uri)
+                runOnUiThread {
+                    dialog.dismiss()
+                    if (info.durationMs <= 0) {
+                        Toast.makeText(this, R.string.load_failed, Toast.LENGTH_SHORT).show()
+                        playButton.isEnabled = false
+                        exportButton.isEnabled = false
+                        return@runOnUiThread
+                    }
+                    durationMs = info.durationMs
+                    waveformView.setData(info.waveform, info.durationMs)
+                    rebuildSegmentsFromSelection()
+                    updateTimeText(0L)
+                    playButton.isEnabled = true
+                    exportButton.isEnabled = true
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    dialog.dismiss()
+                    Toast.makeText(this, R.string.load_failed, Toast.LENGTH_SHORT).show()
+                    playButton.isEnabled = false
+                    exportButton.isEnabled = false
+                }
             }
         }.start()
     }
