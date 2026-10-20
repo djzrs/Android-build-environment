@@ -19,4 +19,5 @@
     <string name="clear_segments">清除分段</string>
     <string name="segments_cleared">已清除分段</string>
     <string name="segment_label">第 %d 段</string>
+    <string name="delete_segment">删除该段</string>
 </resources>
