@@ -46,11 +46,13 @@ class MainActivity : AppCompatActivity() {
             if (isPlaying) {
                 val mp = mediaPlayer
                 if (mp != null) {
+                    val position = mp.currentPosition.toLong()
+                    waveformView.playheadMs = position
                     val endMs = waveformView.selectionEndMs
-                    if (mp.currentPosition >= endMs) {
+                    if (position >= endMs) {
                         pausePlayback()
                     } else {
-                        applySegmentVolume(mp.currentPosition.toLong())
+                        applySegmentVolume(position)
                         handler.postDelayed(this, 50)
                     }
                 }

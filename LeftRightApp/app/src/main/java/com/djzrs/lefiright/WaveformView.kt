@@ -8,10 +8,18 @@ import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import com.djzrs.lefiright.AudioProcessor.Segment
 import kotlin.math.abs
 
+/**
+ * 波形视图：
+ * - 显示音频波形与选区
+ * - 分段色块 / 分割线 / 点击选中段 / 长按添加分割点
+ * - 播放进度线（playhead）
+ * - 双指缩放、单指平移、双击复位视图
+ */
 class WaveformView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -26,9 +34,20 @@ class WaveformView @JvmOverloads constructor(
     var segments: List<Segment> = emptyList()
     var selectedSegmentIndex: Int = 0
 
+    /** 播放进度（毫秒），null 表示不显示 */
+    var playheadMs: Long? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     var onSelectionChanged: ((Long, Long) -> Unit)? = null
     var onSegmentSelected: ((Int) -> Unit)? = null
     var onSplitRequested: ((Long) -> Unit)? = null
+
+    // 可视区域（缩放/平移）
+    private var viewStartMs = 0L
+    private var viewDurationMs = 0L
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -63,6 +82,11 @@ class WaveformView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeWidth = 4f
     }
+    private val playheadPaint = Paint().apply {
+        color = 0xFFFFD700.toInt()
+        isAntiAlias = true
+        strokeWidth = 5f
+    }
 
     private val segmentColors = listOf(
         0x2200E5FF.toInt(), 0x22FF3B30.toInt(), 0x22FFD700.toInt(),
@@ -75,7 +99,12 @@ class WaveformView @JvmOverloads constructor(
     private var dragging = NONE
     private var downX = 0f
     private var downY = 0f
+    private var lastPanX = 0f
+    private var panning = false
+    private var multiTouch = false
     private var longPressTriggered = false
+    private var lastTapTime = 0L
+    private var lastTapX = 0f
     private val touchSlop = 60f
     private val longPressTimeout = 500L
 
@@ -84,10 +113,30 @@ class WaveformView @JvmOverloads constructor(
         onSplitRequested?.invoke(timeForX(downX))
     }
 
+    private val scaleDetector = ScaleGestureDetector(context,
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                if (viewDurationMs <= 0 || durationMs <= 0) return false
+                val focusRatio = (detector.focusX / width.toFloat()).coerceIn(0f, 1f)
+                val centerMs = viewStartMs + (focusRatio * viewDurationMs).toLong()
+                val newDuration = (viewDurationMs / detector.scaleFactor)
+                    .toLong()
+                    .coerceIn(MIN_VIEW_DURATION, durationMs)
+                val maxStart = (durationMs - newDuration).coerceAtLeast(0L)
+                val newStart = (centerMs - (focusRatio * newDuration).toLong())
+                    .coerceIn(0L, maxStart)
+                viewStartMs = newStart
+                viewDurationMs = newDuration
+                invalidate()
+                return true
+            }
+        })
+
     companion object {
         private const val NONE = 0
         private const val LEFT = 1
         private const val RIGHT = 2
+        private const val MIN_VIEW_DURATION = 2_000L
     }
 
     fun setData(waveform: FloatArray, durationMs: Long) {
@@ -97,6 +146,9 @@ class WaveformView @JvmOverloads constructor(
         this.selectionEndMs = durationMs
         this.segments = listOf(Segment(0L, durationMs, 0f))
         this.selectedSegmentIndex = 0
+        this.playheadMs = null
+        this.viewStartMs = 0L
+        this.viewDurationMs = durationMs
         invalidate()
         onSelectionChanged?.invoke(selectionStartMs, selectionEndMs)
         onSegmentSelected?.invoke(0)
@@ -107,6 +159,13 @@ class WaveformView @JvmOverloads constructor(
         selectedSegmentIndex = 0
         invalidate()
         onSegmentSelected?.invoke(0)
+    }
+
+    /** 复位视图到全览 */
+    fun resetView() {
+        viewStartMs = 0L
+        viewDurationMs = durationMs
+        invalidate()
     }
 
     override fun onDetachedFromWindow() {
@@ -122,12 +181,14 @@ class WaveformView @JvmOverloads constructor(
 
         canvas.drawLine(0f, centerY, w, centerY, centerLinePaint)
 
-        // 波形（峰值条）
-        if (waveform.size > 0 && w > 0) {
+        // 波形（按可视区域映射）
+        if (waveform.size > 0 && w > 0 && viewDurationMs > 0) {
             val maxBar = h * 0.42f
             val n = waveform.size
             for (i in 0 until n) {
-                val x = i / (n - 1f) * w
+                val t = (i.toFloat() / (n - 1f)) * durationMs
+                val x = xForTime(t.toLong())
+                if (x < -2f || x > w + 2f) continue
                 val amp = waveform[i] * maxBar
                 canvas.drawLine(x, centerY - amp, x, centerY + amp, waveformPaint)
             }
@@ -159,6 +220,15 @@ class WaveformView @JvmOverloads constructor(
             }
         }
 
+        // 播放进度线
+        val playhead = playheadMs
+        if (playhead != null) {
+            val px = xForTime(playhead)
+            if (px >= 0f && px <= w) {
+                canvas.drawLine(px, 0f, px, h, playheadPaint)
+            }
+        }
+
         // 手柄
         drawHandle(canvas, startX, h)
         drawHandle(canvas, endX, h)
@@ -173,14 +243,14 @@ class WaveformView @JvmOverloads constructor(
     }
 
     private fun xForTime(ms: Long): Float {
-        if (durationMs <= 0) return 0f
-        return (ms.toFloat() / durationMs) * width.toFloat()
+        if (viewDurationMs <= 0) return 0f
+        return ((ms - viewStartMs).toFloat() / viewDurationMs) * width.toFloat()
     }
 
     private fun timeForX(x: Float): Long {
-        if (durationMs <= 0) return 0
+        if (viewDurationMs <= 0) return 0
         val ratio = (x / width.toFloat()).coerceIn(0f, 1f)
-        return (ratio * durationMs).toLong()
+        return (viewStartMs + ratio * viewDurationMs).toLong()
     }
 
     private fun segmentIndexAt(x: Float): Int {
@@ -191,19 +261,43 @@ class WaveformView @JvmOverloads constructor(
         return -1
     }
 
+    private fun panBy(dxPx: Float) {
+        if (durationMs <= 0 || viewDurationMs >= durationMs) return
+        val deltaMs = (dxPx / width.toFloat() * viewDurationMs).toLong()
+        val maxStart = (durationMs - viewDurationMs).coerceAtLeast(0L)
+        viewStartMs = (viewStartMs - deltaMs).coerceIn(0L, maxStart)
+        invalidate()
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (durationMs <= 0) return false
-        val x = event.x
-        when (event.action) {
+        scaleDetector.onTouchEvent(event)
+
+        when (event.actionMasked) {
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                multiTouch = true
+                handler.removeCallbacks(longPressRunnable)
+                return true
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (event.pointerCount <= 2) {
+                    multiTouch = false
+                }
+                return true
+            }
             MotionEvent.ACTION_DOWN -> {
-                downX = x
+                downX = event.x
                 downY = event.y
+                lastPanX = event.x
+                panning = false
+                multiTouch = false
                 longPressTriggered = false
+                lastTapTime = 0
                 val startX = xForTime(selectionStartMs)
                 val endX = xForTime(selectionEndMs)
                 dragging = when {
-                    abs(x - startX) < touchSlop -> LEFT
-                    abs(x - endX) < touchSlop -> RIGHT
+                    abs(event.x - startX) < touchSlop -> LEFT
+                    abs(event.x - endX) < touchSlop -> RIGHT
                     else -> NONE
                 }
                 if (dragging != NONE) {
@@ -214,36 +308,55 @@ class WaveformView @JvmOverloads constructor(
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
+                if (multiTouch) {
+                    return true
+                }
                 if (dragging == LEFT) {
-                    val t = timeForX(x)
+                    val t = timeForX(event.x)
                     selectionStartMs = t.coerceIn(0L, selectionEndMs)
                     invalidate()
                     onSelectionChanged?.invoke(selectionStartMs, selectionEndMs)
                     return true
                 } else if (dragging == RIGHT) {
-                    val t = timeForX(x)
+                    val t = timeForX(event.x)
                     selectionEndMs = t.coerceIn(selectionStartMs, durationMs)
                     invalidate()
                     onSelectionChanged?.invoke(selectionStartMs, selectionEndMs)
                     return true
                 } else {
-                    // 移动超过阈值则取消长按
-                    if (abs(x - downX) > touchSlop || abs(event.y - downY) > touchSlop) {
+                    if (abs(event.x - downX) > touchSlop || abs(event.y - downY) > touchSlop) {
                         handler.removeCallbacks(longPressRunnable)
+                        if (viewDurationMs < durationMs) {
+                            panning = true
+                            panBy(event.x - lastPanX)
+                            lastPanX = event.x
+                            return true
+                        }
                     }
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 handler.removeCallbacks(longPressRunnable)
-                if (dragging == NONE && !longPressTriggered) {
-                    val index = segmentIndexAt(x)
+                if (dragging == NONE && !longPressTriggered && !panning && !multiTouch) {
+                    val index = segmentIndexAt(event.x)
                     if (index >= 0) {
                         selectedSegmentIndex = index
                         invalidate()
                         onSegmentSelected?.invoke(index)
                     }
+                    // 双击复位
+                    val now = System.currentTimeMillis()
+                    if (now - lastTapTime < 300 && abs(event.x - lastTapX) < dp(80)) {
+                        resetView()
+                        lastTapTime = 0
+                    } else {
+                        lastTapTime = now
+                        lastTapX = event.x
+                    }
                 }
                 dragging = NONE
+                panning = false
+                multiTouch = false
                 return true
             }
         }
