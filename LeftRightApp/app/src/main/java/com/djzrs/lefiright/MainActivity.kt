@@ -27,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var panText: TextView
     private lateinit var exportButton: Button
     private lateinit var clearSegmentsButton: Button
+    private lateinit var deleteSegmentButton: Button
 
     private var audioUri: Uri? = null
     private var durationMs = 0L
@@ -83,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         panText = findViewById(R.id.panText)
         exportButton = findViewById(R.id.exportButton)
         clearSegmentsButton = findViewById(R.id.clearSegmentsButton)
+        deleteSegmentButton = findViewById(R.id.deleteSegmentButton)
 
         findViewById<Button>(R.id.importButton).setOnClickListener {
             pickAudio.launch("audio/*")
@@ -95,6 +97,10 @@ class MainActivity : AppCompatActivity() {
 
         clearSegmentsButton.setOnClickListener {
             resetSegments()
+        }
+
+        deleteSegmentButton.setOnClickListener {
+            deleteSelectedSegment()
         }
 
         volumeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -196,6 +202,38 @@ class MainActivity : AppCompatActivity() {
         rebuildSegmentsFromSelection()
         waveformView.invalidate()
         Toast.makeText(this, R.string.segments_cleared, Toast.LENGTH_SHORT).show()
+    }
+
+    /** 删除当前选中的段：时间范围并入相邻段，保持总时长与时间轴不变 */
+    private fun deleteSelectedSegment() {
+        if (segments.size <= 1) return
+        val idx = selectedSegmentIndex
+        val deleted = segments[idx]
+        val newSegments = mutableListOf<Segment>()
+        for (i in segments.indices) {
+            when {
+                i == idx -> {
+                    // 跳过被删段
+                }
+                i == idx - 1 -> {
+                    // 前一段的结束时间扩展到被删段的结束时间
+                    newSegments.add(Segment(segments[i].startMs, deleted.endMs, segments[i].pan))
+                }
+                i == idx + 1 && idx == 0 -> {
+                    // 删除第一段时，后一段的开始时间向前扩展到被删段的开始时间
+                    newSegments.add(Segment(deleted.startMs, segments[i].endMs, segments[i].pan))
+                }
+                else -> newSegments.add(segments[i])
+            }
+        }
+        segments.clear()
+        segments.addAll(newSegments)
+        selectedSegmentIndex = (idx - 1).coerceIn(0, segments.size - 1)
+        waveformView.segments = segments.toList()
+        waveformView.selectedSegmentIndex = selectedSegmentIndex
+        waveformView.invalidate()
+        panFader.pan = segments[selectedSegmentIndex].pan
+        updatePanText()
     }
 
     /** 在 ms 处添加分割点（把所在段一分为二） */
