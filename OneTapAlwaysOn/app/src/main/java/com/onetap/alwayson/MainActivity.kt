@@ -12,11 +12,17 @@ import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.onetap.alwayson.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val EXTRA_AUTO_START = "com.onetap.alwayson.extra.AUTO_START"
+        const val EXTRA_DURATION_MINUTES = "com.onetap.alwayson.extra.DURATION_MINUTES"
+    }
 
     private lateinit var binding: ActivityMainBinding
     private var pendingStart = false
@@ -34,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            // 无论是否授予，都不阻断主流程；正式版可按需提示
+            // 通知权限结果不阻断主流程；倒计时提醒依赖该权限
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,8 +53,52 @@ class MainActivity : AppCompatActivity() {
             if (isChecked) requestStart() else stopFloatBall()
         }
 
+        setupDurationPicker()
         setupColorPicker()
+        handleShortcutIntent(intent)
     }
+
+    // ---------- 时长选择 ----------
+
+    private fun setupDurationPicker() {
+        val prefs = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
+        val savedMinutes = prefs.getInt(FloatBallView.KEY_DURATION_MINUTES, FloatBallService.DEFAULT_DURATION_MINUTES)
+        when (savedMinutes) {
+            30 -> binding.radio30.isChecked = true
+            60 -> binding.radio60.isChecked = true
+            0 -> binding.radioUnlimited.isChecked = true
+            else -> binding.radio15.isChecked = true
+        }
+        updateModeHint(savedMinutes)
+
+        binding.radioGroupDuration.setOnCheckedChangeListener { _, checkedId ->
+            val minutes = when (checkedId) {
+                binding.radio30.id -> 30
+                binding.radio60.id -> 60
+                binding.radioUnlimited.id -> 0
+                else -> 15
+            }
+            prefs.edit().putInt(FloatBallView.KEY_DURATION_MINUTES, minutes).apply()
+            updateModeHint(minutes)
+        }
+    }
+
+    private fun updateModeHint(minutes: Int) {
+        val resId = when (minutes) {
+            30 -> R.string.mode_hint_30
+            60 -> R.string.mode_hint_60
+            0 -> R.string.mode_hint_unlimited
+            else -> R.string.mode_hint_15
+        }
+        binding.tvModeHint.setText(resId)
+    }
+
+    private fun currentDurationMinutes(): Int {
+        val prefs = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
+        return prefs.getInt(FloatBallView.KEY_DURATION_MINUTES, FloatBallService.DEFAULT_DURATION_MINUTES)
+    }
+
+    // ---------- 颜色选择 ----------
 
     private fun setupColorPicker() {
         colorDots.addAll(
@@ -93,6 +143,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ---------- 开关联动 ----------
+
     private fun requestStart() {
         if (!Settings.canDrawOverlays(this)) {
             pendingStart = true
@@ -105,7 +157,26 @@ class MainActivity : AppCompatActivity() {
             return
         }
         maybeRequestNotificationPermission()
-        startFloatBall()
+        showWakeLockHintIfNeeded {
+            startFloatBall()
+        }
+    }
+
+    private fun showWakeLockHintIfNeeded(onConfirmed: () -> Unit) {
+        val prefs = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(FloatBallView.KEY_WAKE_LOCK_HINT_SHOWN, false)) {
+            onConfirmed()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.wakelock_dialog_title)
+            .setMessage(R.string.wakelock_dialog_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                prefs.edit().putBoolean(FloatBallView.KEY_WAKE_LOCK_HINT_SHOWN, true).apply()
+                onConfirmed()
+            }
+            .show()
     }
 
     private fun maybeRequestNotificationPermission() {
@@ -120,6 +191,7 @@ class MainActivity : AppCompatActivity() {
     private fun startFloatBall() {
         val intent = Intent(this, FloatBallService::class.java)
             .setAction(FloatBallService.ACTION_SHOW)
+            .putExtra(FloatBallService.EXTRA_DURATION_MINUTES, currentDurationMinutes())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
@@ -134,13 +206,40 @@ class MainActivity : AppCompatActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
+    // ---------- 快捷方式入口 ----------
+
+    private fun handleShortcutIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_AUTO_START, false) != true) return
+        val minutes = intent.getIntExtra(EXTRA_DURATION_MINUTES, FloatBallService.DEFAULT_DURATION_MINUTES)
+        getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putInt(FloatBallView.KEY_DURATION_MINUTES, minutes)
+            .apply()
+        when (minutes) {
+            30 -> binding.radio30.isChecked = true
+            60 -> binding.radio60.isChecked = true
+            0 -> binding.radioUnlimited.isChecked = true
+            else -> binding.radio15.isChecked = true
+        }
+        updateModeHint(minutes)
+        // 自动开启
+        binding.switchAlwaysOn.isChecked = true
+    }
+
+    // ---------- 生命周期 ----------
+
     override fun onResume() {
         super.onResume()
-        if (!pendingStart) return
+        if (!pendingStart) {
+            syncSwitchWithService()
+            return
+        }
         if (Settings.canDrawOverlays(this)) {
             pendingStart = false
             maybeRequestNotificationPermission()
-            startFloatBall()
+            showWakeLockHintIfNeeded {
+                startFloatBall()
+            }
         } else {
             // 用户从授权页返回但未授予，回滚开关
             pendingStart = false
@@ -148,9 +247,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun syncSwitchWithService() {
+        val running = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(FloatBallView.KEY_SERVICE_RUNNING, false)
+        if (!running && binding.switchAlwaysOn.isChecked) {
+            setSwitchSilently(false)
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     private fun setSwitchSilently(checked: Boolean) {
         suppressListener = true
         binding.switchAlwaysOn.isChecked = checked
         suppressListener = false
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShortcutIntent(intent)
     }
 }

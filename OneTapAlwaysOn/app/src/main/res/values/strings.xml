@@ -3,4 +3,33 @@
     <string name="notification_text">悬浮球已开启，屏幕保持常亮</string>
     <string name="notification_hide">关闭</string>
     <string name="float_ball_color">悬浮窗颜色</string>
+
+    <!-- 时长选择 -->
+    <string name="duration_label">常亮时长</string>
+    <string name="duration_15">15 分钟</string>
+    <string name="duration_30">30 分钟</string>
+    <string name="duration_60">1 小时</string>
+    <string name="duration_unlimited">不限时</string>
+
+    <!-- 模式提示 -->
+    <string name="mode_hint_15">跨应用常亮 · 15 分钟后自动关闭 · 锁屏即释放</string>
+    <string name="mode_hint_30">跨应用常亮 · 30 分钟后自动关闭 · 锁屏即释放</string>
+    <string name="mode_hint_60">跨应用常亮 · 1 小时后自动关闭 · 锁屏即释放</string>
+    <string name="mode_hint_unlimited">跨应用常亮 · 不限时（最长 12 小时自动关闭）· 锁屏即释放</string>
+
+    <!-- 耗电提示 -->
+    <string name="wakelock_dialog_title">开启跨应用常亮</string>
+    <string name="wakelock_dialog_message">此模式会让屏幕持续点亮，耗电增加；到点自动关闭，锁屏也会自动释放。</string>
+    <string name="ok">知道了</string>
+
+    <!-- 通知 -->
+    <string name="notification_countdown">常亮中，剩余 %1$d 分钟</string>
+    <string name="notification_unlimited">常亮中（不限时，最长 12 小时后自动关闭）</string>
+    <string name="notification_almost_done">常亮即将结束，还有 1 分钟</string>
+
+    <!-- 快捷方式 -->
+    <string name="shortcut_15">开启 15 分钟常亮</string>
+    <string name="shortcut_15_long">一键开启 15 分钟屏幕常亮</string>
+    <string name="shortcut_30">开启 30 分钟常亮</string>
+    <string name="shortcut_30_long">一键开启 30 分钟屏幕常亮</string>
 </resources>

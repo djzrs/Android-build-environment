@@ -5,6 +5,9 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Point
 import android.graphics.Rect
@@ -18,6 +21,7 @@ import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import androidx.annotation.ColorInt
 import kotlin.math.abs
+import kotlin.math.min
 
 class FloatBallView(
     context: Context,
@@ -28,6 +32,8 @@ class FloatBallView(
         const val PREFS_NAME = "settings"
         const val KEY_BALL_COLOR = "ball_color"
         const val KEY_SERVICE_RUNNING = "service_running"
+        const val KEY_DURATION_MINUTES = "duration_minutes"
+        const val KEY_WAKE_LOCK_HINT_SHOWN = "wake_lock_hint_shown"
     }
 
     private val density = context.resources.displayMetrics.density
@@ -44,6 +50,9 @@ class FloatBallView(
     val windowParams: WindowManager.LayoutParams
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+    private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
+    private val doubleTapTimeout = ViewConfiguration.getDoubleTapTimeout().toLong()
+
     private var downX = 0f
     private var downY = 0f
     private var dragStartX = 0
@@ -51,11 +60,36 @@ class FloatBallView(
     private var isDragging = false
     private var isSnapped = false
     private var currentAnimator: ValueAnimator? = null
+    private var longPressTriggered = false
+    private var lastClickTime = 0L
+
+    private val longPressRunnable = Runnable {
+        longPressTriggered = true
+        isDragging = false
+        closeFloatBall()
+    }
 
     @ColorInt
     private var ballColor: Int
 
     private val backgroundDrawable = GradientDrawable()
+
+    private var countdownRemainingMillis = 0L
+    private var countdownTotalMillis = 0L
+
+    private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = (3 * density)
+        strokeCap = Paint.Cap.ROUND
+        color = 0x66FFFFFF.toInt()
+    }
+
+    private val progressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = (3 * density)
+        strokeCap = Paint.Cap.ROUND
+        color = Color.WHITE
+    }
 
     init {
         @Suppress("DEPRECATION")
@@ -98,6 +132,12 @@ class FloatBallView(
         backgroundDrawable.setColor(ballColor)
     }
 
+    fun updateCountdown(remainingMillis: Long, totalMillis: Long) {
+        countdownRemainingMillis = remainingMillis
+        countdownTotalMillis = totalMillis
+        invalidate()
+    }
+
     private fun updateBackground(oval: Boolean) {
         backgroundDrawable.shape =
             if (oval) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
@@ -107,10 +147,32 @@ class FloatBallView(
         backgroundDrawable.setColor(ballColor)
     }
 
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        if (countdownTotalMillis <= 0 || isSnapped || width <= 0) return
+        val fraction = (countdownRemainingMillis.toFloat() / countdownTotalMillis)
+            .coerceIn(0f, 1f)
+        val centerX = width / 2f
+        val centerY = height / 2f
+        val radius = min(width, height) / 2f - 4 * density
+        val startAngle = -90f
+        canvas.drawArc(
+            centerX - radius, centerY - radius, centerX + radius, centerY + radius,
+            startAngle, 360f, false, trackPaint
+        )
+        canvas.drawArc(
+            centerX - radius, centerY - radius, centerX + radius, centerY + radius,
+            startAngle, 360f * fraction, false, progressPaint
+        )
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 currentAnimator?.cancel()
+                longPressTriggered = false
+                removeCallbacks(longPressRunnable)
+                postDelayed(longPressRunnable, longPressTimeout)
                 downX = event.rawX
                 downY = event.rawY
                 dragStartX = windowParams.x
@@ -123,6 +185,7 @@ class FloatBallView(
                 val dx = event.rawX - downX
                 val dy = event.rawY - downY
                 if (!isDragging && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
+                    removeCallbacks(longPressRunnable)
                     isDragging = true
                     // 贴边态下向内滑动 → 立即脱离吸附，恢复圆形球
                     if (isSnapped && isInwardDrag(dx)) {
@@ -144,11 +207,17 @@ class FloatBallView(
             }
 
             MotionEvent.ACTION_UP -> {
+                removeCallbacks(longPressRunnable)
+                if (longPressTriggered) {
+                    longPressTriggered = false
+                    isDragging = false
+                    return true
+                }
                 if (!isDragging) {
                     if (isSnapped) {
                         unsnap()
                     } else {
-                        openMainActivity()
+                        handleTap()
                     }
                 } else {
                     snapToEdgeIfNeeded()
@@ -157,11 +226,24 @@ class FloatBallView(
             }
 
             MotionEvent.ACTION_CANCEL -> {
+                removeCallbacks(longPressRunnable)
                 if (isDragging) snapToEdgeIfNeeded()
                 isDragging = false
             }
         }
         return true
+    }
+
+    private fun handleTap() {
+        val now = System.currentTimeMillis()
+        if (now - lastClickTime < doubleTapTimeout) {
+            // 双击 → 关闭常亮
+            lastClickTime = 0
+            closeFloatBall()
+        } else {
+            lastClickTime = now
+            openMainActivity()
+        }
     }
 
     private fun restoreBallInstantly() {
@@ -188,6 +270,12 @@ class FloatBallView(
             )
         }
         context.startActivity(intent)
+    }
+
+    private fun closeFloatBall() {
+        val intent = Intent(context, FloatBallService::class.java)
+            .setAction(FloatBallService.ACTION_HIDE)
+        context.startService(intent)
     }
 
     private fun snapToEdgeIfNeeded() {

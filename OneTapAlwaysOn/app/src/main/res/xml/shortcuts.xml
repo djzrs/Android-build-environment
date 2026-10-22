@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="always_on_15"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_15"
+        android:shortcutLongLabel="@string/shortcut_15_long">
+
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.onetap.alwayson"
+            android:targetClass="com.onetap.alwayson.MainActivity">
+            <extra
+                android:name="com.onetap.alwayson.extra.AUTO_START"
+                android:value="true" />
+            <extra
+                android:name="com.onetap.alwayson.extra.DURATION_MINUTES"
+                android:value="15" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="always_on_30"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_30"
+        android:shortcutLongLabel="@string/shortcut_30_long">
+
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.onetap.alwayson"
+            android:targetClass="com.onetap.alwayson.MainActivity">
+            <extra
+                android:name="com.onetap.alwayson.extra.AUTO_START"
+                android:value="true" />
+            <extra
+                android:name="com.onetap.alwayson.extra.DURATION_MINUTES"
+                android:value="30" />
+        </intent>
+    </shortcut>
+
+</shortcuts>
