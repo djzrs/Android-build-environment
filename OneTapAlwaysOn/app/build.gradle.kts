@@ -21,8 +21,8 @@ android {
         applicationId = "com.onetap.alwayson"
         minSdk = 26          // TYPE_APPLICATION_OVERLAY 从 API 26 起可用，省去兼容分支
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     buildTypes {

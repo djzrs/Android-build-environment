@@ -2,176 +2,187 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        android:textSize="28sp"
-        android:textStyle="bold" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/switchAlwaysOn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp" />
-
-    <TextView
-        android:id="@+id/tvModeHint"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/mode_hint_15"
-        android:textSize="13sp"
-        android:textColor="?android:attr/textColorSecondary" />
-
-    <TextView
-        android:id="@+id/tvDurationLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/duration_label"
-        android:textSize="16sp"
-        android:textColor="?android:attr/textColorSecondary" />
-
-    <RadioGroup
-        android:id="@+id/radioGroupDuration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <RadioButton
-            android:id="@+id/radio15"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/duration_15" />
-
-        <RadioButton
-            android:id="@+id/radio30"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="@string/duration_30" />
-
-        <RadioButton
-            android:id="@+id/radio60"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="@string/duration_60" />
-
-        <RadioButton
-            android:id="@+id/radioUnlimited"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="@string/duration_unlimited" />
-
-    </RadioGroup>
-
-    <TextView
-        android:id="@+id/tvColorLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:text="@string/float_ball_color"
-        android:textSize="16sp"
-        android:textColor="?android:attr/textColorSecondary" />
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="horizontal">
-
-        <View
-            android:id="@+id/colorDot0"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot1"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot2"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot3"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot4"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:orientation="horizontal">
-
-        <View
-            android:id="@+id/colorDot5"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot6"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot7"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot8"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-        <View
-            android:id="@+id/colorDot9"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_margin="6dp" />
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="0dp"
+    <ScrollView
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchAlwaysOn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp" />
+
+            <TextView
+                android:id="@+id/tvModeHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/mode_hint_15"
+                android:textSize="13sp"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <TextView
+                android:id="@+id/tvDurationLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="@string/duration_label"
+                android:textSize="16sp"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <RadioGroup
+                android:id="@+id/radioGroupDuration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/radio15"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/duration_15" />
+
+                <RadioButton
+                    android:id="@+id/radio30"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/duration_30" />
+
+                <RadioButton
+                    android:id="@+id/radio60"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/duration_60" />
+
+                <RadioButton
+                    android:id="@+id/radioUnlimited"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/duration_unlimited" />
+
+            </RadioGroup>
+
+            <TextView
+                android:id="@+id/tvColorLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="@string/float_ball_color"
+                android:textSize="16sp"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/colorDot0"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot1"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot2"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot3"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot4"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/colorDot5"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot6"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot7"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot8"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+                <View
+                    android:id="@+id/colorDot9"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_margin="6dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 
     <TextView
         android:id="@+id/tvHelp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="14dp"
         android:gravity="center"
-        android:lineSpacingExtra="4dp"
+        android:lineSpacingExtra="3dp"
         android:text="@string/help_text"
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textColor="?android:attr/textColorTertiary" />
 
 </LinearLayout>
