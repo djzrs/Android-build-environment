@@ -23,7 +23,8 @@ class AlwaysOnTileService : TileService() {
         } else {
             val duration = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
                 .getInt(FloatBallView.KEY_DURATION_MINUTES, FloatBallService.DEFAULT_DURATION_MINUTES)
-            startService(
+            // 磁贴可能从后台触发，必须用 startForegroundService（前台服务）
+            startForegroundService(
                 Intent(this, FloatBallService::class.java)
                     .setAction(FloatBallService.ACTION_SHOW)
                     .putExtra(FloatBallService.EXTRA_DURATION_MINUTES, duration)

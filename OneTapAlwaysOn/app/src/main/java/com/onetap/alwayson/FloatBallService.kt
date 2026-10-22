@@ -118,13 +118,18 @@ class FloatBallService : Service() {
     private fun startCountdown() {
         mainHandler.removeCallbacksAndMessages(null)
         val runnable = object : Runnable {
+            private var tick = 0
             override fun run() {
                 val remaining = endTimeMillis - System.currentTimeMillis()
                 if (remaining <= 0) {
                     stopEverything()
                     return
                 }
-                updateCountdownNotification(remaining)
+                tick++
+                // 通知每 10 秒刷新一次；最后 60 秒每秒刷新以保持提醒
+                if (tick % 10 == 0 || remaining <= 60_000) {
+                    updateCountdownNotification(remaining)
+                }
                 floatBallView?.updateCountdown(remaining, totalMillis)
                 mainHandler.postDelayed(this, 1000L)
             }
