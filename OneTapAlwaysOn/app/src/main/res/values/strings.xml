@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">一键常亮</string>
+    <string name="notification_text">悬浮球已开启，屏幕保持常亮</string>
+    <string name="notification_hide">关闭</string>
+</resources>
