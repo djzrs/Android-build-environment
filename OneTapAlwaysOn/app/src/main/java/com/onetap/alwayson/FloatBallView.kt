@@ -38,7 +38,7 @@ class FloatBallView(
 
     private val density = context.resources.displayMetrics.density
     private val ballSizePx = (63 * density).toInt()        // 63dp ≈ 10mm
-    private val barWidthPx = (28 * density).toInt()       // 贴边后的圆角竖条宽度
+    private val barWidthPx = (20 * density).toInt()       // 贴边后的圆角竖条宽度（比球直径小约 70%）
     private val barCornerRadiusPx = (barWidthPx / 2).toFloat()
     private val snapThresholdPx = (80 * density).toInt()   // 中心点距边缘小于该值才吸附
     private val unsnapOffsetPx = (24 * density).toInt()    // 变回球时向内挪的距离
@@ -50,8 +50,6 @@ class FloatBallView(
     val windowParams: WindowManager.LayoutParams
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-    private val longPressTimeout = ViewConfiguration.getLongPressTimeout().toLong()
-    private val doubleTapTimeout = ViewConfiguration.getDoubleTapTimeout().toLong()
 
     private var downX = 0f
     private var downY = 0f
@@ -60,14 +58,6 @@ class FloatBallView(
     private var isDragging = false
     private var isSnapped = false
     private var currentAnimator: ValueAnimator? = null
-    private var longPressTriggered = false
-    private var lastClickTime = 0L
-
-    private val longPressRunnable = Runnable {
-        longPressTriggered = true
-        isDragging = false
-        closeFloatBall()
-    }
 
     @ColorInt
     private var ballColor: Int
@@ -170,9 +160,6 @@ class FloatBallView(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 currentAnimator?.cancel()
-                longPressTriggered = false
-                removeCallbacks(longPressRunnable)
-                postDelayed(longPressRunnable, longPressTimeout)
                 downX = event.rawX
                 downY = event.rawY
                 dragStartX = windowParams.x
@@ -185,7 +172,6 @@ class FloatBallView(
                 val dx = event.rawX - downX
                 val dy = event.rawY - downY
                 if (!isDragging && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
-                    removeCallbacks(longPressRunnable)
                     isDragging = true
                     // 贴边态下向内滑动 → 立即脱离吸附，恢复圆形球
                     if (isSnapped && isInwardDrag(dx)) {
@@ -207,17 +193,11 @@ class FloatBallView(
             }
 
             MotionEvent.ACTION_UP -> {
-                removeCallbacks(longPressRunnable)
-                if (longPressTriggered) {
-                    longPressTriggered = false
-                    isDragging = false
-                    return true
-                }
                 if (!isDragging) {
                     if (isSnapped) {
                         unsnap()
                     } else {
-                        handleTap()
+                        openMainActivity()
                     }
                 } else {
                     snapToEdgeIfNeeded()
@@ -226,24 +206,11 @@ class FloatBallView(
             }
 
             MotionEvent.ACTION_CANCEL -> {
-                removeCallbacks(longPressRunnable)
                 if (isDragging) snapToEdgeIfNeeded()
                 isDragging = false
             }
         }
         return true
-    }
-
-    private fun handleTap() {
-        val now = System.currentTimeMillis()
-        if (now - lastClickTime < doubleTapTimeout) {
-            // 双击 → 关闭常亮
-            lastClickTime = 0
-            closeFloatBall()
-        } else {
-            lastClickTime = now
-            openMainActivity()
-        }
     }
 
     private fun restoreBallInstantly() {
@@ -270,12 +237,6 @@ class FloatBallView(
             )
         }
         context.startActivity(intent)
-    }
-
-    private fun closeFloatBall() {
-        val intent = Intent(context, FloatBallService::class.java)
-            .setAction(FloatBallService.ACTION_HIDE)
-        context.startService(intent)
     }
 
     private fun snapToEdgeIfNeeded() {

@@ -32,4 +32,7 @@
     <string name="shortcut_15_long">一键开启 15 分钟屏幕常亮</string>
     <string name="shortcut_30">开启 30 分钟常亮</string>
     <string name="shortcut_30_long">一键开启 30 分钟屏幕常亮</string>
+
+    <!-- 页面底部使用说明 -->
+    <string name="help_text">使用方法：打开开关后，悬浮球会出现在屏幕边缘，屏幕在设定时长内保持常亮（其他 App 中同样生效）。\n拖动悬浮球可移动位置，松手自动贴边；点击悬浮球返回本页，点击贴边竖条可恢复为圆球。\n到点自动关闭常亮，锁屏也会立即释放；点击色块可更换悬浮球颜色。</string>
 </resources>

@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="32dp">
+    android:padding="24dp">
 
     <TextView
         android:layout_width="wrap_content"
@@ -17,13 +17,13 @@
         android:id="@+id/switchAlwaysOn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp" />
+        android:layout_marginTop="24dp" />
 
     <TextView
         android:id="@+id/tvModeHint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:text="@string/mode_hint_15"
         android:textSize="13sp"
         android:textColor="?android:attr/textColorSecondary" />
@@ -32,7 +32,7 @@
         android:id="@+id/tvDurationLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
         android:text="@string/duration_label"
         android:textSize="16sp"
         android:textColor="?android:attr/textColorSecondary" />
@@ -54,21 +54,21 @@
             android:id="@+id/radio30"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:text="@string/duration_30" />
 
         <RadioButton
             android:id="@+id/radio60"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:text="@string/duration_60" />
 
         <RadioButton
             android:id="@+id/radioUnlimited"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="10dp"
             android:text="@string/duration_unlimited" />
 
     </RadioGroup>
@@ -77,7 +77,7 @@
         android:id="@+id/tvColorLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="28dp"
         android:text="@string/float_ball_color"
         android:textSize="16sp"
         android:textColor="?android:attr/textColorSecondary" />
@@ -85,39 +85,93 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:orientation="horizontal">
 
         <View
             android:id="@+id/colorDot0"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="8dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
 
         <View
             android:id="@+id/colorDot1"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="8dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
 
         <View
             android:id="@+id/colorDot2"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="8dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
 
         <View
             android:id="@+id/colorDot3"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="8dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
 
         <View
             android:id="@+id/colorDot4"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="8dp" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
 
     </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/colorDot5"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/colorDot6"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/colorDot7"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/colorDot8"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
+
+        <View
+            android:id="@+id/colorDot9"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="6dp" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/tvHelp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:text="@string/help_text"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorTertiary" />
 
 </LinearLayout>

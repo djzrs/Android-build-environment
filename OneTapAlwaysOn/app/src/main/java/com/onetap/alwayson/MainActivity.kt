@@ -33,7 +33,12 @@ class MainActivity : AppCompatActivity() {
         0xFFFF9800.toInt(), // 琥珀橙
         0xFF4CAF50.toInt(), // 绿色
         0xFFE53935.toInt(), // 红色
-        0xFF9C27B0.toInt()  // 紫色
+        0xFF9C27B0.toInt(), // 紫色
+        0xFF00BCD4.toInt(), // 青色
+        0xFF2196F3.toInt(), // 天蓝
+        0xFFE91E63.toInt(), // 粉色
+        0xFFFFEB3B.toInt(), // 黄色
+        0xFF795548.toInt()  // 棕色
     )
 
     private val colorDots = mutableListOf<View>()
@@ -104,7 +109,9 @@ class MainActivity : AppCompatActivity() {
         colorDots.addAll(
             listOf(
                 binding.colorDot0, binding.colorDot1, binding.colorDot2,
-                binding.colorDot3, binding.colorDot4
+                binding.colorDot3, binding.colorDot4, binding.colorDot5,
+                binding.colorDot6, binding.colorDot7, binding.colorDot8,
+                binding.colorDot9
             )
         )
         val prefs = getSharedPreferences(FloatBallView.PREFS_NAME, MODE_PRIVATE)
