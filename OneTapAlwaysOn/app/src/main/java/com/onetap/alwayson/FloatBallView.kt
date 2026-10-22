@@ -1,8 +1,10 @@
 package com.onetap.alwayson
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.Color
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.Point
 import android.graphics.Rect
@@ -14,6 +16,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
+import androidx.annotation.ColorInt
 import kotlin.math.abs
 
 class FloatBallView(
@@ -21,8 +24,16 @@ class FloatBallView(
     private val windowManager: WindowManager
 ) : View(context) {
 
+    companion object {
+        const val PREFS_NAME = "settings"
+        const val KEY_BALL_COLOR = "ball_color"
+        const val KEY_SERVICE_RUNNING = "service_running"
+    }
+
     private val density = context.resources.displayMetrics.density
     private val ballSizePx = (63 * density).toInt()        // 63dp ≈ 10mm
+    private val barWidthPx = (28 * density).toInt()       // 贴边后的圆角竖条宽度
+    private val barCornerRadiusPx = (barWidthPx / 2).toFloat()
     private val snapThresholdPx = (80 * density).toInt()   // 中心点距边缘小于该值才吸附
     private val unsnapOffsetPx = (24 * density).toInt()    // 变回球时向内挪的距离
     private val edgeMarginPx = (8 * density).toInt()
@@ -39,6 +50,12 @@ class FloatBallView(
     private var dragStartY = 0
     private var isDragging = false
     private var isSnapped = false
+    private var currentAnimator: ValueAnimator? = null
+
+    @ColorInt
+    private var ballColor: Int
+
+    private val backgroundDrawable = GradientDrawable()
 
     init {
         @Suppress("DEPRECATION")
@@ -65,15 +82,35 @@ class FloatBallView(
             y = screenHeight / 3
         }
 
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.parseColor("#CC3F51B5"))
+        ballColor = loadSavedColor()
+        updateBackground(oval = true)
+        background = backgroundDrawable
+    }
+
+    private fun loadSavedColor(): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val rgb = prefs.getInt(KEY_BALL_COLOR, 0xFF3F51B5.toInt())
+        return (0xCC shl 24) or (rgb and 0x00FFFFFF)
+    }
+
+    fun setColor(@ColorInt rgb: Int) {
+        ballColor = (0xCC shl 24) or (rgb and 0x00FFFFFF)
+        backgroundDrawable.setColor(ballColor)
+    }
+
+    private fun updateBackground(oval: Boolean) {
+        backgroundDrawable.shape =
+            if (oval) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+        if (!oval) {
+            backgroundDrawable.cornerRadius = barCornerRadiusPx
         }
+        backgroundDrawable.setColor(ballColor)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                currentAnimator?.cancel()
                 downX = event.rawX
                 downY = event.rawY
                 dragStartX = windowParams.x
@@ -87,29 +124,39 @@ class FloatBallView(
                 val dy = event.rawY - downY
                 if (!isDragging && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
                     isDragging = true
-                    // 贴边态下向内滑动 → 脱离吸附
-                    if (isSnapped && isInwardDrag(dx)) isSnapped = false
+                    // 贴边态下向内滑动 → 立即脱离吸附，恢复圆形球
+                    if (isSnapped && isInwardDrag(dx)) {
+                        isSnapped = false
+                        restoreBallInstantly()
+                        downX = event.rawX
+                        downY = event.rawY
+                        dragStartX = windowParams.x
+                        dragStartY = windowParams.y
+                    }
                 }
                 if (isDragging) {
                     windowParams.x = (dragStartX + dx).toInt()
-                        .coerceIn(0, screenWidth - ballSizePx)
+                        .coerceIn(0, screenWidth - windowParams.width)
                     windowParams.y = (dragStartY + dy).toInt()
-                        .coerceIn(0, screenHeight - ballSizePx)
+                        .coerceIn(0, screenHeight - windowParams.height)
                     windowManager.updateViewLayout(this, windowParams)
                 }
             }
 
             MotionEvent.ACTION_UP -> {
                 if (!isDragging) {
-                    // 贴边态下的点击 → 变回球
-                    if (isSnapped) unsnap()
+                    if (isSnapped) {
+                        unsnap()
+                    } else {
+                        openMainActivity()
+                    }
                 } else {
                     snapToEdgeIfNeeded()
                 }
+                isDragging = false
             }
 
             MotionEvent.ACTION_CANCEL -> {
-                // 手势被系统打断：按拖动结束处理，避免状态残留
                 if (isDragging) snapToEdgeIfNeeded()
                 isDragging = false
             }
@@ -117,39 +164,84 @@ class FloatBallView(
         return true
     }
 
+    private fun restoreBallInstantly() {
+        windowParams.x = if (windowParams.x <= 0) {
+            unsnapOffsetPx
+        } else {
+            screenWidth - ballSizePx - unsnapOffsetPx
+        }
+        windowParams.width = ballSizePx
+        windowParams.height = ballSizePx
+        updateBackground(oval = true)
+        windowManager.updateViewLayout(this, windowParams)
+    }
+
     private fun isInwardDrag(dx: Float): Boolean =
         if (dragStartX < screenWidth / 2) dx > 0 else dx < 0
 
+    private fun openMainActivity() {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            )
+        }
+        context.startActivity(intent)
+    }
+
     private fun snapToEdgeIfNeeded() {
-        val centerX = windowParams.x + ballSizePx / 2f
-        val targetX = when {
-            centerX < snapThresholdPx -> 0
-            screenWidth - centerX < snapThresholdPx -> screenWidth - ballSizePx
+        val centerX = windowParams.x + windowParams.width / 2f
+        val targetX: Int
+        val targetWidth: Int
+        when {
+            centerX < snapThresholdPx -> {
+                targetX = 0
+                targetWidth = barWidthPx
+            }
+            screenWidth - centerX < snapThresholdPx -> {
+                targetX = screenWidth - barWidthPx
+                targetWidth = barWidthPx
+            }
             else -> {
                 isSnapped = false
                 return
             }
         }
-        animateX(targetX)
+        animateTo(targetX, targetWidth, targetOval = false)
         isSnapped = true
     }
 
     private fun unsnap() {
-        val inward = if (windowParams.x <= edgeMarginPx) 1 else -1
-        val targetX = (windowParams.x + inward * unsnapOffsetPx)
-            .coerceIn(0, screenWidth - ballSizePx)
-        animateX(targetX)
+        val targetX: Int
+        if (windowParams.x <= 0) {
+            targetX = unsnapOffsetPx
+        } else {
+            targetX = screenWidth - ballSizePx - unsnapOffsetPx
+        }
+        animateTo(targetX, ballSizePx, targetOval = true)
         isSnapped = false
     }
 
-    private fun animateX(targetX: Int) {
-        ValueAnimator.ofInt(windowParams.x, targetX).apply {
+    private fun animateTo(targetX: Int, targetWidth: Int, targetOval: Boolean) {
+        val startX = windowParams.x
+        val startWidth = windowParams.width
+        updateBackground(targetOval)
+        ValueAnimator.ofFloat(0f, 1f).apply {
             duration = 300
             interpolator = DecelerateInterpolator()
-            addUpdateListener {
-                windowParams.x = it.animatedValue as Int
+            addUpdateListener { anim ->
+                val f = anim.animatedFraction
+                windowParams.x = (startX + (targetX - startX) * f).toInt()
+                windowParams.width = (startWidth + (targetWidth - startWidth) * f).toInt()
                 windowManager.updateViewLayout(this@FloatBallView, windowParams)
             }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    currentAnimator = null
+                }
+            })
+            currentAnimator = this
             start()
         }
     }

@@ -19,4 +19,51 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp" />
 
+    <TextView
+        android:id="@+id/tvColorLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:text="@string/float_ball_color"
+        android:textSize="16sp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/colorDot0"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/colorDot1"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/colorDot2"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/colorDot3"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="8dp" />
+
+        <View
+            android:id="@+id/colorDot4"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="8dp" />
+
+    </LinearLayout>
+
 </LinearLayout>

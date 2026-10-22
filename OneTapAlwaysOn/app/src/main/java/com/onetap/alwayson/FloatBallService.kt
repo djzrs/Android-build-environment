@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -17,6 +18,8 @@ class FloatBallService : Service() {
     companion object {
         const val ACTION_SHOW = "com.onetap.alwayson.action.SHOW"
         const val ACTION_HIDE = "com.onetap.alwayson.action.HIDE"
+        const val ACTION_UPDATE_COLOR = "com.onetap.alwayson.action.UPDATE_COLOR"
+        const val EXTRA_COLOR = "extra_color"
         private const val CHANNEL_ID = "float_ball_channel"
         private const val NOTIFICATION_ID = 1001
     }
@@ -35,11 +38,19 @@ class FloatBallService : Service() {
             ACTION_SHOW -> {
                 startAsForeground()
                 showBall()
+                getSharedPreferences(FloatBallView.PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean(FloatBallView.KEY_SERVICE_RUNNING, true)
+                    .apply()
             }
             ACTION_HIDE -> {
                 removeBall()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+            }
+            ACTION_UPDATE_COLOR -> {
+                val color = intent.getIntExtra(EXTRA_COLOR, 0)
+                floatBallView?.setColor(color)
             }
         }
         return START_NOT_STICKY
@@ -72,6 +83,10 @@ class FloatBallService : Service() {
     }
 
     override fun onDestroy() {
+        getSharedPreferences(FloatBallView.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(FloatBallView.KEY_SERVICE_RUNNING, false)
+            .apply()
         removeBall()
         super.onDestroy()
     }
