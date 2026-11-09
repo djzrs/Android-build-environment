@@ -1,0 +1,15 @@
+# 签名材料的占位文件。
+#
+# 现在四项都是空的，构建脚本检测到空值就退回 debug 签名：能装、能测、上不了架。
+# 配好密钥仓库后，把 .cnb.yml 里 html-manager-build 的 imports 换成密钥仓库中
+# 这份同名文件的地址，真值就从那边注入，这个文件保持空着不动。
+#
+# 为什么留占位而不是直接写密钥仓库地址：地址写死成不存在的仓库时，
+# imports 在 Prepare 阶段就失败，整条流水线连编译都跑不起来。
+#
+# 生成密钥与填写的完整步骤：docs/签名与版本号.md
+
+ANDROID_KEYSTORE_BASE64: ""
+ANDROID_KEYSTORE_PASSWORD: ""
+ANDROID_KEY_ALIAS: ""
+ANDROID_KEY_PASSWORD: ""

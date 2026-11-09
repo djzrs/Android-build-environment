@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 图标：深海军蓝底 + 白色文件页 + 蓝色 </> + 眼睛 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 文件页 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,25h22l14,14v39a3,3 0 0,1 -3,3H36a3,3 0 0,1 -3,-3V28a3,3 0 0,1 3,-3z" />
+    <!-- 折角 -->
+    <path
+        android:fillColor="#C7D7F2"
+        android:pathData="M58,25l14,14h-14z" />
+
+    <!-- < -->
+    <path
+        android:fillColor="#0B1B33"
+        android:pathData="M48,42.5l-7,7.5 7,7.5 -2.6,2.4 -9.4,-9.9 9.4,-9.9z" />
+    <!-- > -->
+    <path
+        android:fillColor="#0B1B33"
+        android:pathData="M60,42.5l7,7.5 -7,7.5 2.6,2.4 9.4,-9.9 -9.4,-9.9z" />
+    <!-- / -->
+    <path
+        android:fillColor="#1A73E8"
+        android:strokeColor="#1A73E8"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:pathData="M57.2,41.5L50.8,60.5" />
+
+    <!-- 眼睛 -->
+    <path
+        android:fillColor="#0B1B33"
+        android:pathData="M54,64.4c-5,0 -8.9,3.3 -10.6,4.9a1.1,1.1 0 0,0 0,1.6c1.7,1.6 5.6,4.9 10.6,4.9s8.9,-3.3 10.6,-4.9a1.1,1.1 0 0,0 0,-1.6c-1.7,-1.6 -5.6,-4.9 -10.6,-4.9zM54,73.1a4.2,4.2 0 1,1 0,-8.4 4.2,4.2 0 0,1 0,8.4z" />
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M54,70.5a1.6,1.6 0 1,1 0,-3.2 1.6,1.6 0 0,1 0,3.2z" />
+</vector>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HTML 管家</string>
+
+    <!-- 前台服务通知 -->
+    <string name="server_notification_channel">局域网服务器</string>
+    <string name="server_notification_channel_desc">服务器运行时常驻的提示</string>
+    <string name="server_notification_title">局域网服务器运行中</string>
+    <string name="server_notification_starting">正在启动…</string>
+    <string name="server_notification_action_stop">停止</string>
+
+    <!-- 悬浮窗 -->
+    <string name="overlay_title">局域网服务器</string>
+    <string name="overlay_close_desc">收起悬浮窗</string>
+    <string name="overlay_expand_desc">展开悬浮窗</string>
+</resources>

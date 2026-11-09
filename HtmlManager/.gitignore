@@ -1,0 +1,14 @@
+.gradle/
+build/
+app/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+dist/
+build-secrets/
+
+# 签名材料一律不进仓库：CI 从密钥仓库注入，本地放 .ci/signing.properties
+.ci/signing.properties
+*.jks
+*.keystore

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="overlay_panel">#F21E1E1E</color>
+    <color name="overlay_panel_border">#4A4E54</color>
+    <color name="overlay_panel_text">#E8EAED</color>
+    <color name="overlay_panel_text_secondary">#9AA0A6</color>
+</resources>
