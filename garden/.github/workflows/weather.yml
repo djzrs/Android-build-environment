@@ -1,0 +1,33 @@
+name: Archive daily weather
+
+on:
+  schedule:
+    # 09:25 Asia/Shanghai (GitHub cron uses UTC)
+    - cron: '25 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  weather:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: garden
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch yesterday's weather
+        run: python update_weather.py
+      - name: Commit weather archive
+        working-directory: .
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add garden/data/weather.json
+          git diff --cached --quiet || (git commit -m 'Update weather archive' && git push)
